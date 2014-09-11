@@ -31,7 +31,7 @@ Slot::~Slot()
 string Slot::toString()
 {
     string ret_str = "[ ";
-    for(list<Card>::iterator it = m_cards.begin(); it != m_cards.end(); ++it)
+    for(vector<Card>::iterator it = m_cards.begin(); it != m_cards.end(); ++it)
     {
         ret_str += (*it).toString();
     ret_str+= " ";

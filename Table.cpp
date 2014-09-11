@@ -243,8 +243,8 @@ void Table::playerTakeCard(Player* player)
         it = m_number_to_slot.find(i);
         if ((*it).second->status() != Slot::Empty)
         {
-            list<Card> test_list = (*it).second->cards();
-            for (list<Card>::iterator card_it = test_list.begin();
+            vector<Card> test_list = (*it).second->cards();
+            for (vector<Card>::iterator card_it = test_list.begin();
                     card_it != test_list.end();
                     ++card_it)
                 tmp_list.push_back(*card_it);

@@ -8,7 +8,7 @@
 #ifndef SLOT_H
 #define	SLOT_H
 
-#include <list>
+#include <vector>
 #include "Card.h"
 
 namespace cardsrv
@@ -26,7 +26,7 @@ public:
     };
     
 private:
-    std::list<Card> m_cards;
+    std::vector<Card> m_cards;
     int m_max_cards;
     
     SlotStatus m_status;
@@ -49,7 +49,7 @@ public:
         return m_status;
     }
     
-    std::list<Card> cards()
+    std::vector<Card> cards() const
     {
         return m_cards;
     }

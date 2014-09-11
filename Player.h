@@ -140,13 +140,12 @@ namespace cardsrv {
         
         std::list<Player*> table_players() const;
         std::list<Slot*> table_slots() const;
-        
-        
+        Card::Suit table_trump() const;
         
 
         // test!
         std::string toString() const;
-        std::list<Card> cards();
+        std::list<Card> cards() const;
 
     private:
         void ready();

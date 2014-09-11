@@ -145,6 +145,12 @@ std::list<Player*> Player::table_players() const
     return m_table->players();
 }
 
+Card::Suit Player::table_trump() const
+{
+    return m_table->trump();
+}
+
+
 std::list<Slot*> Player::table_slots() const
 {
     return m_table->slots();
@@ -165,9 +171,9 @@ std::string Player::toString() const
     return ret_str;
 }
 
-std::list<Card> Player::cards()
+std::list<Card> Player::cards() const
 {
-    map<string, Card>::iterator it = m_str_to_cards.begin();
+    map<string, Card>::const_iterator it = m_str_to_cards.begin();
     list<Card> ret_list;
     ret_list.clear();
 
