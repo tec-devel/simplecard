@@ -50,7 +50,8 @@ public:
     Card(const Card& orig);
     
     std::string toString() const;
-    Card fromJson(std::string);
+    static Card fromJson(std::string);
+    static Card fromString(std::string);
     
     Suit suit() const
     {

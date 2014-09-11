@@ -53,3 +53,36 @@ string Card::toString() const
     return tmp_str;
 }
 
+Card Card::fromString(std::string card)
+{
+    Card ret_card(Spades, Six);
+    if(card[0] == 'S')
+        ret_card.m_suit = Spades;
+    else if(card[0] == 'C')
+        ret_card.m_suit = Clubs;
+    else if(card[0] == 'D')
+        ret_card.m_suit = Diamonds;
+    else if(card[0] == 'H')
+        ret_card.m_suit = Hearts;
+    
+    if(card[1] == '6')
+        ret_card.m_value = Six;
+    else  if(card[1] == '7')
+        ret_card.m_value = Seven;
+    else  if(card[1] == '8')
+        ret_card.m_value = Eight;
+    else  if(card[1] == '9')
+        ret_card.m_value = Nine;
+    else  if(card[1] == '10')
+        ret_card.m_value = Ten;
+    else  if(card[1] == 'J')
+        ret_card.m_value = Jack;
+    else  if(card[1] == 'Q')
+        ret_card.m_value = Queen;
+    else  if(card[1] == 'K')
+        ret_card.m_value = King;
+    else  if(card[1] == 'A')
+        ret_card.m_value = Ace;
+    
+    return ret_card;
+}
