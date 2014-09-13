@@ -16,12 +16,9 @@
 using namespace cardsrv;
 using namespace std;
 
-int Table::table_count = 0;
-
-Table::Table(int players_count) :
-max_players((players_count > MAX_PLAYERS) ? MAX_PLAYERS : players_count)
+Table::Table(int players_count)
+: AbstractTable((players_count > MAX_PLAYERS) ? MAX_PLAYERS : players_count)
 {
-    m_id = table_count++;
     m_state = Table::WaitPlayersConnect;
 
     Slot *tmp_slot = 0;
@@ -45,18 +42,19 @@ Table::~Table()
     }
 }
 
-void Table::movePlayerPointer(std::list<Player*>::iterator& it)
+void Table::movePlayerPointer(std::list<AbstractPlayer*>::iterator& it)
 {
-    std::list<Player*>::iterator start_it;
-    if (*it == m_players.back())
-        it = m_players.begin();
+    std::list<AbstractPlayer*>::iterator start_it;
+    if (*it == players().back())
+        it = players().begin();
     else
         ++it;
 
-    while ((*it)->cards().empty())
+    Player* tmp_player = (Player*) (*it);
+    while (tmp_player->cards().empty())
     {
-        if (*it == m_players.back())
-            it = m_players.begin();
+        if (*it == players().back())
+            it = players().begin();
         else
             ++it;
 
@@ -69,10 +67,10 @@ void Table::movePlayerPointer(std::list<Player*>::iterator& it)
 void Table::actualizePlayers()
 {
 
-    for (list<Player*>::iterator it = m_players.begin(); it != m_players.end(); ++it)
-        (*it)->setActivity(Player::Enabled);
+    for (list<AbstractPlayer*>::iterator it = players().begin(); it != players().end(); ++it)
+        ((Player*) (*it))->setActivity(Player::Enabled);
 
-    list <Player*>::iterator tmp_it;
+    list <AbstractPlayer*>::iterator tmp_it;
 
     if (m_active_player)
     {
@@ -80,13 +78,13 @@ void Table::actualizePlayers()
         movePlayerPointer(act_player_it);
     }
 
-    m_active_player = *act_player_it;
+    m_active_player = (Player*) * act_player_it;
     m_active_player->setStatus(Player::Active);
 
     tmp_it = act_player_it;
     movePlayerPointer(tmp_it);
 
-    m_passive_player = *tmp_it;
+    m_passive_player = (Player*) * tmp_it;
     m_passive_player->setStatus(Player::Passive);
 
     if (m_active_player == m_passive_player)
@@ -97,7 +95,7 @@ void Table::actualizePlayers()
 
 bool Table::isFinishedDeal()
 {
-    bool ret_code = m_flushed_player == m_players.size() - 1 && m_active_slots == 0;
+    bool ret_code = m_flushed_player == players().size() - 1 && m_active_slots == 0;
     if (ret_code)
     {
         map<int, Slot*>::iterator it;
@@ -114,7 +112,7 @@ bool Table::isFinishedDeal()
 
 void Table::init()
 {
-
+    std::cout << "1" << std::endl;
     m_active_player = NULL;
     m_passive_player = NULL;
 
@@ -123,9 +121,8 @@ void Table::init()
     m_flushed_player = 0;
 
     memset(m_is_on_table, 0, sizeof (m_is_on_table));
-
-    for (list<Player*>::iterator it = m_players.begin(); it != m_players.end(); ++it)
-        (*it)->setActivity(Player::Enabled);
+    for (list<AbstractPlayer*>::iterator it = players().begin(); it != players().end(); ++it)
+        ((Player*) (*it))->setActivity(Player::Enabled);
 }
 
 void Table::next()
@@ -152,17 +149,17 @@ void Table::prepare()
     Card::Value tmp_card = Card::Ace, test_card;
 
     bool have_trump = false;
-    std::list<Player*>::iterator it = m_players.begin();
-    if ((*it)->getJuniorTrump(tmp_card))
+    std::list<AbstractPlayer*>::iterator it = players().begin();
+    if (((Player*) (*it))->getJuniorTrump(tmp_card))
     {
         have_trump = true;
         act_player_it = it;
     }
 
     ++it;
-    for (; it != m_players.end(); ++it)
+    for (; it != players().end(); ++it)
     {
-        if ((*it)->getJuniorTrump(test_card) && test_card > tmp_card)
+        if (((Player*) (*it))->getJuniorTrump(test_card) && test_card > tmp_card)
         {
             act_player_it = it;
             have_trump = true;
@@ -171,7 +168,7 @@ void Table::prepare()
     }
 
     if (!have_trump)
-        act_player_it = m_players.begin();
+        act_player_it = players().begin();
 
     actualizePlayers();
 }
@@ -187,26 +184,31 @@ void Table::go()
 
 void Table::start()
 {
+    if (m_state == WaitPlayersConnect)
+    {
+        m_state = WaitFirstTurn;
+        go();
+    }
 }
 
 bool Table::deal()
 {
-    list<Player*>::iterator it;
+    list<AbstractPlayer*>::iterator it;
     list<Card> tmp_list;
 
     bool is_deck_empty = false; // возвращает остались ли в колоде карты
 
     vector<Card>::iterator card_it = m_deck_list.begin();
-    card_it += m_players.size() * FIRST_DEAL_SIZE;
+    card_it += players().size() * FIRST_DEAL_SIZE;
     m_trump = (*card_it).suit();
 
     //    Card tmp_card = *card_it;
     //    m_deck_list.erase(card_it);
     //    m_deck_list.push_back()
 
-    for (it = m_players.begin(); it != m_players.end(); ++it)
+    for (it = players().begin(); it != players().end(); ++it)
     {
-        for (int j = 0; j < ((int) FIRST_DEAL_SIZE - (int) (*it)->cards().size()) && !is_deck_empty; j++)
+        for (int j = 0; j < ((int) FIRST_DEAL_SIZE - (int) ((Player*) (*it))->cards().size()) && !is_deck_empty; j++)
         {
             if (!m_deck_list.empty())
             {
@@ -221,13 +223,13 @@ bool Table::deal()
 
         if (!tmp_list.empty())
         {
-            (*it)->addCardFromDeal(tmp_list);
+            ((Player*) (*it))->addCardFromDeal(tmp_list);
             tmp_list.clear();
         }
         else
         {
-            if ((*it)->cards().empty())
-                (*it)->setActivity(Player::Disabled);
+            if (((Player*) (*it))->cards().empty())
+                ((Player*) (*it))->setActivity(Player::Disabled);
         }
     }
 
@@ -285,28 +287,21 @@ void Table::flush(Player* player)
         }
 }
 
-Player* Table::addPlayer(int id)
-{
-    Player *player = 0;
-
-    if (m_players.size() < max_players)
-    {
-        player = new Player(this, id);
-        m_players.push_back(player);
-        m_id_to_players.insert(make_pair(player->localId(), player));
-    }
-
-    if (m_players.size() == max_players)
-    {
-        if (m_state == WaitPlayersConnect)
-        {
-            m_state = WaitFirstTurn;
-            go();
-        }
-    }
-
-    return player;
-}
+//Player* Table::addPlayer(int id)
+//{
+//    Player *player = 0;
+//
+//    if (m_players.size() < max_players)
+//    {
+//        player = new Player(this, id);
+//        m_players.push_back(player);
+//        m_id_to_players.insert(make_pair(player->localId(), player));
+//    }
+//
+//
+//
+//    return player;
+//}
 
 bool Table::putCard(Player* player, Card card, int slot_number)
 {

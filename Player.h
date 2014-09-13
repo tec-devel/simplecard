@@ -9,6 +9,9 @@
 #define	PLAYER_H
 
 #include <list>
+
+#include "AbstractPlayer.h"
+
 #include "Card.h"
 #include "Slot.h"
 
@@ -17,7 +20,7 @@ namespace cardsrv {
     class Table;
     class Slot;
 
-    class Player {
+    class Player : public AbstractPlayer {
         friend class Table;
 
     public:
@@ -47,16 +50,12 @@ namespace cardsrv {
     private:
         static int player_count;
 
-        Table* m_table;
-
-        int m_global_id;
+        //        int m_global_id;
         int m_local_id;
 
         bool have_junior_trump;
 
         std::map<std::string, Card> m_str_to_cards;
-
-        std::string m_last_token;
 
         // fool theme
         Card::Value m_junior_trump;
@@ -78,7 +77,7 @@ namespace cardsrv {
          * тоже закрыт :)
          * @param orig
          */
-        Player(const Player& orig);
+//        Player(const Player& orig);
     public:
         virtual ~Player();
 
@@ -96,20 +95,20 @@ namespace cardsrv {
          * (одну карту? а почему тогда список?)
          * @return статус хода (см. TurnStatus)
          */
-        TurnStatus turnFromClient(std::list<Card> cards, std::string token, int slot_number);
-        
+        TurnStatus turnFromClient(std::list<Card> cards, int slot_number);
+
         /**
          * Метод, означающий отбой
          */
         void flush();
-        
+
         /**
          * Метод, генерирующий уникальный токен авторизации для следующего хода
          * если при осуществлении следующего хода этот токен не совпадает, ход
          * не совершается
          * @return уникальный токен авторизации
          */
-        std::string genToken();
+//        std::string genToken();
 
         /**
          * Игрок забирает карты со стола на руки
@@ -134,14 +133,11 @@ namespace cardsrv {
         PlayerStatus status() const {
             return m_status;
         }
-        
-        
+
+
         /// методы для получения информации о столе и других игроках
-        
-        std::list<Player*> table_players() const;
-        std::list<Slot*> table_slots() const;
-        Card::Suit table_trump() const;
-        
+        virtual void get(const std::vector<std::string>& restful_data, std::string& responce) const;
+        virtual void put(const std::vector<std::string>& restful_data, const std::string& request, std::string& responce);
 
         // test!
         std::string toString() const;
