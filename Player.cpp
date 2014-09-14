@@ -173,10 +173,14 @@ void Player::get(const std::vector<std::string>&, std::string& responce) const
         json_object_object_add(jtable_slot, "number", json_object_new_int(i));
 
         if ((*s_it)->cards().size() == 1)
-            json_object_object_add(jtable_slot, "up", json_object_new_string((*s_it)->cards()[0].toString().data()));
-
-        if ((*s_it)->cards().size() == 2)
-            json_object_object_add(jtable_slot, "down", json_object_new_string((*s_it)->cards()[1].toString().data()));
+        {
+            json_object_object_add(jtable_slot, "down", json_object_new_string((*s_it)->cards()[0].toString().data()));
+        }
+        else if ((*s_it)->cards().size() == 2)
+        {
+            json_object_object_add(jtable_slot, "down", json_object_new_string((*s_it)->cards()[0].toString().data()));
+            json_object_object_add(jtable_slot, "up", json_object_new_string((*s_it)->cards()[1].toString().data()));
+        }
 
         json_object_array_add(jtable_slots, jtable_slot);
     }
