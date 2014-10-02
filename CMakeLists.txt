@@ -2,9 +2,13 @@ cmake_minimum_required(VERSION 2.8)
 
 project (simplecards)
 
+set(CMAKE_CXX_FLAGS "-std=c++0x")
+
 set (SOURCES
         AbstractPlayer.cpp
         AbstractTable.cpp
+        GameEvent.cpp
+        EventlyPlayer.cpp
 	Card.cpp
 	Player.cpp
 	Slot.cpp
@@ -13,6 +17,8 @@ set (SOURCES
 set (HEADERS
         AbstractPlayer.h
         AbstractTable.h
+        EventlyPlayer.h
+        GameEvent.h
 	Card.h
 	Player.h
 	Slot.h

@@ -15,6 +15,8 @@
 #include "Player.h"
 #include "AbstractTable.h"
 
+#include <pthread.h>
+
 #define MAX_PLAYERS 6
 #define MAX_SLOTS 6
 #define MAX_CARDS_IN_SLOT 2
@@ -38,6 +40,8 @@ namespace cardsrv {
         };
 
     private:
+
+        mutable pthread_mutex_t table_mutex;
 
         Table::State m_state;
 
@@ -93,7 +97,6 @@ namespace cardsrv {
         void fillDeck();
         void prepare();
         bool deal();
-        void flush(Player*);
 
         void go();
 
@@ -106,6 +109,12 @@ namespace cardsrv {
 
     protected:
 
+        void flush_private(Player*);
+        bool put_card_private(Player*, Card, int);
+        void take_card_private(Player*);
+
+        
+        void flush(Player*);
         bool putCard(Player*, Card, int);
         void playerTakeCard(Player*);
     };

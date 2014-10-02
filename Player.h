@@ -10,7 +10,7 @@
 
 #include <list>
 
-#include "AbstractPlayer.h"
+#include "EventlyPlayer.h"
 
 #include "Card.h"
 #include "Slot.h"
@@ -20,11 +20,15 @@ namespace cardsrv {
     class Table;
     class Slot;
 
-    class Player : public AbstractPlayer {
+    class Player : public EventlyPlayer {
         friend class Table;
 
     public:
-
+        enum PlayerRestfulData
+        {
+            TurnData = UserData,
+        };
+        
         enum TurnStatus {
             /// ход завершен успешно; карта легла на стол, куда ее собирался положить игрок
             Success,

@@ -29,6 +29,8 @@ Table::Table(int players_count)
         m_slots.push_back(tmp_slot);
     }
 
+    pthread_mutex_init(&table_mutex, 0);
+
     init();
 }
 
@@ -66,11 +68,10 @@ void Table::movePlayerPointer(std::list<AbstractPlayer*>::iterator& it)
 
 void Table::actualizePlayers()
 {
+    list <AbstractPlayer*>::iterator tmp_it;
 
     for (list<AbstractPlayer*>::iterator it = players().begin(); it != players().end(); ++it)
         ((Player*) (*it))->setActivity(Player::Enabled);
-
-    list <AbstractPlayer*>::iterator tmp_it;
 
     if (m_active_player)
     {
@@ -112,7 +113,6 @@ bool Table::isFinishedDeal()
 
 void Table::init()
 {
-    std::cout << "1" << std::endl;
     m_active_player = NULL;
     m_passive_player = NULL;
 
@@ -179,7 +179,6 @@ void Table::go()
     fillDeck(); // заполняем массив колоды
     deal(); // сдача карт
     prepare(); // подготовка игры (у кого младший козырь)
-    start(); // поехали!
 }
 
 void Table::start()
@@ -236,33 +235,14 @@ bool Table::deal()
     return m_deck_list.empty();
 }
 
-void Table::playerTakeCard(Player* player)
+void Table::flush(Player* player)
 {
-    map<int, Slot*>::iterator it;
-    list<Card> tmp_list;
-    for (int i = 1; i < MAX_SLOTS + 1; i++)
-    {
-        it = m_number_to_slot.find(i);
-        if ((*it).second->status() != Slot::Empty)
-        {
-            vector<Card> test_list = (*it).second->cards();
-            for (vector<Card>::iterator card_it = test_list.begin();
-                    card_it != test_list.end();
-                    ++card_it)
-                tmp_list.push_back(*card_it);
-
-            if (!tmp_list.empty())
-                player->addCardFromTable(tmp_list);
-
-            (*it).second->clear();
-        }
-    }
-
-    m_active_slots = 0; // все, активных слотов нет - потому что они пустые
-    m_state = PassiveTakeCards;
+    pthread_mutex_lock(&table_mutex);
+    flush_private(player);
+    pthread_mutex_unlock(&table_mutex);
 }
 
-void Table::flush(Player* player)
+void Table::flush_private(Player* player)
 {
     if (player->activity() != Player::Disabled)
         if (player != m_passive_player)
@@ -287,23 +267,16 @@ void Table::flush(Player* player)
         }
 }
 
-//Player* Table::addPlayer(int id)
-//{
-//    Player *player = 0;
-//
-//    if (m_players.size() < max_players)
-//    {
-//        player = new Player(this, id);
-//        m_players.push_back(player);
-//        m_id_to_players.insert(make_pair(player->localId(), player));
-//    }
-//
-//
-//
-//    return player;
-//}
-
 bool Table::putCard(Player* player, Card card, int slot_number)
+{
+    bool ret = false;
+    pthread_mutex_lock(&table_mutex);
+    ret = put_card_private(player, card, slot_number);
+    pthread_mutex_unlock(&table_mutex);
+    return ret;
+}
+
+bool Table::put_card_private(Player* player, Card card, int slot_number)
 {
     if (player->activity() == Player::Disabled)
         return false;
@@ -388,6 +361,39 @@ bool Table::putCard(Player* player, Card card, int slot_number)
     }
 
     return ret_code;
+}
+
+void Table::playerTakeCard(Player* player)
+{
+    pthread_mutex_lock(&table_mutex);
+    take_card_private(player);
+    pthread_mutex_unlock(&table_mutex);
+}
+
+void Table::take_card_private(Player* player)
+{
+    map<int, Slot*>::iterator it;
+    list<Card> tmp_list;
+    for (int i = 1; i < MAX_SLOTS + 1; i++)
+    {
+        it = m_number_to_slot.find(i);
+        if ((*it).second->status() != Slot::Empty)
+        {
+            vector<Card> test_list = (*it).second->cards();
+            for (vector<Card>::iterator card_it = test_list.begin();
+                    card_it != test_list.end();
+                    ++card_it)
+                tmp_list.push_back(*card_it);
+
+            if (!tmp_list.empty())
+                player->addCardFromTable(tmp_list);
+
+            (*it).second->clear();
+        }
+    }
+
+    m_active_slots = 0; // все, активных слотов нет - потому что они пустые
+    m_state = PassiveTakeCards;
 }
 
 string Table::toString()

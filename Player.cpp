@@ -25,7 +25,7 @@ using namespace std;
 int Player::player_count = 0;
 
 Player::Player(Table* table, int gid)
-: AbstractPlayer(table, gid)
+: EventlyPlayer(table, gid)
 {
     m_local_id = player_count++;
     have_junior_trump = false;
@@ -38,8 +38,12 @@ Player::~Player()
 {
 }
 
-void Player::get(const std::vector<std::string>&, std::string& responce) const
+void Player::get(const std::vector<std::string>& restful_data, std::string& responce) const
 {
+    EventlyPlayer::get(restful_data, responce);
+
+    json_object *jobj = json_tokener_parse(responce.data());
+
     //    {
     //"players" : [
     //	{"id": 1, "cards": 5, "status": "passive", "activity": "enabled"},
@@ -63,7 +67,6 @@ void Player::get(const std::vector<std::string>&, std::string& responce) const
     //	}
     //}
 
-    json_object * jobj = json_object_new_object();
 
     json_object * jplayers_array = json_object_new_array();
     json_object * jtable_player = 0;
@@ -170,7 +173,7 @@ void Player::get(const std::vector<std::string>&, std::string& responce) const
             ++s_it, i++)
     {
         jtable_slot = json_object_new_object();
-        json_object_object_add(jtable_slot, "number", json_object_new_int(i));
+        json_object_object_add(jtable_slot, "number", json_object_new_int(i + 1));
 
         if ((*s_it)->cards().size() == 1)
         {
@@ -190,71 +193,80 @@ void Player::get(const std::vector<std::string>&, std::string& responce) const
 
     json_object_object_add(jobj, "table", jtable);
 
-    responce.append(json_object_to_json_string(jobj));
+    responce = std::string(json_object_to_json_string(jobj));
 }
 
-void Player::put(const std::vector<std::string>&, const std::string& request, std::string& responce)
+void Player::put(const std::vector<std::string>& restful_data, const std::string& request, std::string& responce)
 {
-    //{
-    //    "turn" : { "slot" : 1, "card" : "S6"}
-    //}
-
-    json_object * jobj = json_tokener_parse(request.data());
-
-    int slot_number = -1;
-    std::string card;
-    std::string token;
-
-    enum json_type type, turn_type;
-
-    json_object_object_foreach(jobj, key, val)
+    if (strcmp(restful_data[TurnData].data(), "turn") == 0)
     {
-        type = json_object_get_type(val);
-        switch (type)
+        //{
+        //    "turn" : { "slot" : 1, "card" : "S6"}
+        //}
+
+        json_object * jobj = json_tokener_parse(request.data());
+        int slot_number = -1;
+        std::string card;
+
+        enum json_type type, turn_type;
+
+        json_object_object_foreach(jobj, key, val)
         {
-        case json_type_object:
-            json_object_object_foreach(val, key1, val1)
-        {
-            turn_type = json_object_get_type(val1);
-            switch (turn_type)
+            type = json_object_get_type(val);
+            switch (type)
             {
-            case json_type_int:
-                slot_number = json_object_get_int(val1);
-                break;
-            case json_type_string:
-                if (strcmp(key1, "card") == 0)
-                    card.append(json_object_get_string(val1));
+            case json_type_object:
+                json_object_object_foreach(val, key1, val1)
+            {
+                turn_type = json_object_get_type(val1);
+                switch (turn_type)
+                {
+                case json_type_int:
+                    slot_number = json_object_get_int(val1);
+                    break;
+                case json_type_string:
+                    if (strcmp(key1, "card") == 0)
+                        card.append(json_object_get_string(val1));
+                    break;
+                }
+            }
                 break;
             }
         }
-            break;
-        }
-    }
 
-    json_object * ret_jobj = json_object_new_object();
-    if (slot_number != -1 && !card.empty())
-    {
-        std::list<cardsrv::Card> turn_list;
-        cardsrv::Card turn_card = cardsrv::Card::fromString(card);
-        turn_list.push_back(turn_card);
-
-        cardsrv::Player::TurnStatus status = turnFromClient(turn_list, slot_number);
-        switch (status)
+        json_object * ret_jobj = json_object_new_object();
+        if (slot_number != -1 && !card.empty())
         {
-        case cardsrv::Player::Success:
-            json_object_object_add(ret_jobj, "status", json_object_new_string("success"));
-            break;
-        case cardsrv::Player::Fail:
-            json_object_object_add(ret_jobj, "status", json_object_new_string("fail"));
-            break;
-        }
-        responce.append(json_object_to_json_string(ret_jobj));
-    }
+            std::list<cardsrv::Card> turn_list;
+            cardsrv::Card turn_card = cardsrv::Card::fromString(card);
+            turn_list.push_back(turn_card);
 
-    if (responce.empty())
+            cardsrv::Player::TurnStatus status = turnFromClient(turn_list, slot_number);
+            switch (status)
+            {
+            case cardsrv::Player::Success:
+                json_object_object_add(ret_jobj, "status", json_object_new_string("success"));
+                break;
+            case cardsrv::Player::Fail:
+                json_object_object_add(ret_jobj, "status", json_object_new_string("fail"));
+                break;
+            }
+            responce.append(json_object_to_json_string(ret_jobj));
+        }
+
+        if (responce.empty())
+        {
+            json_object_object_add(ret_jobj, "status", json_object_new_string("fail"));
+            responce.append(json_object_to_json_string(ret_jobj));
+        }
+    }
+    else if (strcmp(restful_data[TurnData].data(), "take") == 0)
     {
-        json_object_object_add(ret_jobj, "status", json_object_new_string("fail"));
-        responce.append(json_object_to_json_string(ret_jobj));
+        takeTableCards();
+    }
+    else if (strcmp(restful_data[TurnData].data(), "flush") == 0)
+    {
+        flush();
     }
 }
 
