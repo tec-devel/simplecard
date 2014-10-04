@@ -9,13 +9,14 @@
 #define	GAMEEVENT_H
 
 #include <memory>
-#include <atomic>
+//#include <atomic>
 
 class GameEvent {
     static int event_counter;
     int m_id;
 
-    std::atomic_bool m_accept_flag;
+//    std::atomic_bool m_accept_flag;
+    bool m_accept_flag;
 
 protected:
     GameEvent();
