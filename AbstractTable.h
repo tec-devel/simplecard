@@ -45,9 +45,20 @@ namespace cardsrv {
         }
 
         virtual AbstractPlayer* addPlayer(int gid);
+        virtual void removePlayer(int gid);
 
         bool isFull() {
             return m_players.size() == max_players;
+        }
+        
+        const int maxPlayers() const
+        {
+            return max_players;
+        }
+
+        int realPlayers() const
+        {
+            return m_players.size();
         }
 
         void startGame();

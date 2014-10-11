@@ -6,6 +6,7 @@
  */
 
 #include "AbstractTable.h"
+#include "AbstractPlayer.h"
 
 using namespace cardsrv;
 
@@ -17,7 +18,6 @@ AbstractTable::AbstractTable(int players_count)
     m_id = table_count++;
     m_table_state = Waiting;
 }
-
 
 AbstractTable::~AbstractTable()
 {
@@ -44,3 +44,21 @@ AbstractPlayer* AbstractTable::addPlayer(int gid)
 
     return ret_player;
 }
+
+void AbstractTable::removePlayer(int gid)
+{
+    std::list<AbstractPlayer*>::iterator it;
+
+    for (it = m_players.begin(); it != m_players.end(); ++it)
+    {
+        if ((*it)->id() == gid)
+            break;
+    }
+
+    if (it != m_players.end())
+    {
+        m_players.erase(it);
+       // delete *it;
+    }
+}
+
